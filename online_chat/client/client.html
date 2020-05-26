@@ -1,0 +1,173 @@
+<!-- 文件名：client.html -->
+<!DOCTYPE html>
+
+<head>
+    <title>WebSocket</title>
+    <meta charset="utf-8">
+    <style>
+        html,
+        body {
+            font: normal 0.9em arial, helvetica;
+        }
+
+        #chat {
+            width: 440px;
+            height: 200px;
+            border: 1px solid #7F9DB9;
+            overflow: auto;
+        }
+
+        #msg {
+            width: 240px;
+        }
+    </style>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+
+<body>
+    <h3>WebSocket</h3>
+    <br><br>
+    <div id="chat"></div>
+    TO
+    <select id="users-list">
+    </select>
+    <input id="msg" type="textbox" onkeypress="onkey(event)" />
+    <button onclick="send()">发送</button>
+    <div id="log"></div>
+</body>
+<script type="text/javascript">
+    $(document).ready(function () {
+        root();
+        online_count();
+    });
+
+    function root() {
+        var socket;
+        var host = "ws://127.0.0.1:9000";
+        try {
+            socket = new WebSocket(host);
+            socket.onopen = function (msg) {
+                console.log("Connect to " + host + " successfully.");
+                socket.send(JSON.stringify({ "username": randomString(10), "for": "register" }));
+            };
+            socket.onmessage = function (msg) { chat(msg.data); socket.send('EOT'); };
+            socket.onclose = function (msg) { console.log("Connection of " + host + " Lose!"); };
+            socket.onerror = function (msg) { console.log(msg); };
+        } catch (ex) {
+            log(ex);
+        }
+    }
+
+    function online_count() {
+        var socket;
+        var host = "ws://127.0.0.1:9000/online-count";
+        try {
+            socket = new WebSocket(host);
+            socket.onopen = function (msg) { console.log("Connect to " + host + " successfully."); socket.send(''); };
+            socket.onmessage = function (msg) { online_select(msg.data); socket.send(''); };
+            socket.onclose = function (msg) { console.log("Connection of " + host + " Lose!"); };
+            socket.onerror = function (msg) { console.log(msg); };
+        } catch (ex) {
+            log(ex);
+        }
+    }
+
+    function latest_message() {
+        var socket;
+        var host = "ws://127.0.0.1:9000/latest-msg";
+        try {
+            socket = new WebSocket(host);
+            socket.onopen = function (msg) { console.log("Connect to " + host + " successfully."); socket.send(''); };
+            socket.onmessage = function (msg) { chat(msg.data); socket.send(''); };
+            socket.onclose = function (msg) { console.log("Connection of " + host + " Lose!"); };
+            socket.onerror = function (msg) { console.log(msg); };
+        } catch (ex) {
+            log(ex);
+        }
+    }
+
+
+    function chat(msg) {
+        var json = JSON.parse(msg);
+        if (json.status_code == 2000) {
+            if (json.data) {
+                msg = `<br>(${json.data.dt}) From ${json.data.sender}: ${json.data.content}`;
+                $("#chat").append(msg)
+            }
+        } else {
+            log(json.message);
+        }
+    }
+
+    function online_select(msg) {
+        var json = JSON.parse(msg);
+        if (json.status_code == 2000) {
+            if (json.data) {
+                let users = new Set(json.data);
+                let valueSet = new Set();
+                $("#users-list option").each(function () {
+                    let txt = $(this).val();
+                    if (txt != '') {
+                        valueSet.add(txt);
+                    }
+                });
+                let differentSet = setDifference(users, valueSet);
+                differentSet.forEach(element => {
+                    let opt = `<option value = "${element}">${element}</option>`;
+                    $("#users-list").append(opt);
+                });
+            }
+        } else {
+            log(json.message)
+        }
+    }
+
+    function randomString(length) {
+        let result = '';
+        let chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        for (let i = length; i > 0; --i) {
+            result += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return result;
+    }
+
+    function custom_send(socket) {
+        var txt, msg;
+        txt = $("#msg");
+        msg = txt.value;
+        if (!msg) {
+            alert("Message can not be empty");
+            return;
+        }
+        try {
+            socket.send(msg);
+        } catch (ex) {
+            log(ex);
+        }
+        txt.value = "";
+        txt.focus();
+    }
+
+    function log(msg) {
+        $("#log").innerHTML += "<br>" + msg
+    }
+
+    function onkey(event) {
+        if (event.keyCode == 13) {
+            send();
+        }
+    }
+
+    function setDifference(thisSet, otherSet) {
+        let differenceSet = new Set();
+
+        thisSet.forEach(element => {
+            if (!otherSet.has(element)) {
+                differenceSet.add(element);
+            }
+        });
+        return differenceSet;
+    }
+</script>
+
+</html>
