@@ -928,19 +928,43 @@ __date__ = '2019/8/10 9:41'
 # cur.close()
 # conn.close()
 
+# def func(str_arrays):
+#     loop_count = min([len(s) for s in str_arrays])
+#     common_str = ''
+#     for i in range(loop_count):
+#         for j, s in enumerate(str_arrays):
+#             if s[:i+1] != str_arrays[0][:i+1]:
+#                 break
+#         else:
+#             common_str = str_arrays[0][:i+1]
+#     if common_str == '':
+#         return '没有最大公共串'
+#     return common_str
+#
+#
+# if __name__ == '__main__':
+#     s_arrays = []
+#     print(func(s_arrays))
 
-from types import MethodType
-class Student():
-    __slots__ = ('age', 'name')
+# 有一个大CSV文件，需要将数据转移到另一个CSV文件
+# 谈谈多进程多线程
+# 字符串的各内置方法
+# redis数据类型。常见方法
+# SQL
 
-class Someone(Student):
-    pass
+import pandas as pd
+import numpy as np
+import time
 
-def set_age(self, age):
-    self.age = age
+df = pd.DataFrame(np.random.randn(1000000, 14), index=pd.date_range('20180101 01', periods=1000000, freq='H'), columns=list('ABCDEFGHIJKLMN'))
+df.to_csv('tst.csv')
 
-s = Someone()
-s.set_age = MethodType(set_age, s)
-s.set_age(10)
-print(s.age)  # output:10
-print(dir(s)) # output:[..., 'age', 'set_age']
+s_time = time.time()
+reader = pd.read_csv('tst.csv', chunksize=1000)
+for chunk in reader:
+    chunk.to_csv('tst_bak.csv', mode='a')
+print('costs time ', time.time() - s_time)
+
+import functools
+
+
